@@ -8,8 +8,8 @@
       height: 600,
       scene: {
           preload: preload,
-          create: create,
-          update: update
+          create: create
+
       },
       contextCreationParams: {
           powerPreference: 'low-power' // save resources
@@ -20,29 +20,22 @@
 
   };
 
-  function update() {
-    if (pinchUpdate) {
-        if (this.input.pointer1.isDown && this.input.pointer2.isDown) {
-            if (!pinchActive) {
-                pinchActive = true;
-                initialPinchDistance = Phaser.Math.Distance.Between(
-                    this.input.pointer1.x, this.input.pointer1.y,
-                    this.input.pointer2.x, this.input.pointer2.y
-                );
-            } else {
-                const pinchDistance = Phaser.Math.Distance.Between(
-                    this.input.pointer1.x, this.input.pointer1.y,
-                    this.input.pointer2.x, this.input.pointer2.y
-                );
+  function handlePinchZoom() {
+    if (!pinchActive) {
+        pinchActive = true;
+        initialPinchDistance = Phaser.Math.Distance.Between(
+            this.input.pointer1.x, this.input.pointer1.y,
+            this.input.pointer2.x, this.input.pointer2.y
+        );
+    } else {
+        const pinchDistance = Phaser.Math.Distance.Between(
+            this.input.pointer1.x, this.input.pointer1.y,
+            this.input.pointer2.x, this.input.pointer2.y
+        );
 
-                const zoomAmount = (initialPinchDistance - pinchDistance) * 0.01;
-                camera.zoom = Phaser.Math.Clamp(camera.zoom - zoomAmount, 0.1, 2);
-                initialPinchDistance = pinchDistance;
-            }
-        } else {
-            pinchActive = false;
-            pinchUpdate = false;
-        }
+        const zoomAmount = (initialPinchDistance - pinchDistance) * 0.01;
+        camera.zoom = Phaser.Math.Clamp(camera.zoom - zoomAmount, 0.1, 2);
+        initialPinchDistance = pinchDistance;
     }
 }
 
@@ -59,7 +52,6 @@
   let dragging = false;
   let dragStart = new Phaser.Math.Vector2();
   let pinchActive = false;
-  let pinchUpdate = false;
   let initialPinchDistance;
 
   function preload() {
@@ -106,7 +98,7 @@
 
       this.input.on('pointerdown', (pointer) => {
           if (this.input.pointer1.isDown && this.input.pointer2.isDown) {
-                pinchUpdate = true;
+
           } else {
               dragging = true;
               dragStart.set(pointer.x, pointer.y);
@@ -126,26 +118,28 @@
 
       }); // mouse zoom functionality and updating the map whenever this happens
 
-      this.input.on('pointermove', _.throttle((pointer) => {
-          if (dragging && !pinchActive) {
-              const deltaX = pointer.x - dragStart.x;
-              const deltaY = pointer.y - dragStart.y;
+      const handlePointerMove = _.throttle((pointer) => {
+        if (dragging && !pinchActive) {
+          const deltaX = pointer.x - dragStart.x;
+          const deltaY = pointer.y - dragStart.y;
 
-              camera.scrollX -= deltaX / camera.zoom;
-              camera.scrollY -= deltaY / camera.zoom;
+          camera.scrollX -= deltaX / camera.zoom;
+          camera.scrollY -= deltaY / camera.zoom;
 
-              dragStart.set(pointer.x, pointer.y);
-          }
+          dragStart.set(pointer.x, pointer.y);
+        }
 
-          if (this.input.pointer1.isDown && this.input.pointer2.isDown) {
-              pinchUpdate = true;
-            }
+        if (this.input.pointer1.isDown && this.input.pointer2.isDown) {
+          handlePinchZoom.call(this);
+        }
+      }, 16);
 
+        this.input.on('pointermove', handlePointerMove);
+        this.input.on('touchmove', handlePointerMove);
 
-      }, 16)); // dragging / scrolling the map and updating the map upon the user event
 
       // Add the event listener for clicking on a tile
-      this.input.on('gameobjectdown', (pointer, gameObject) => {
+        this.input.on('gameobjectdown', (pointer, gameObject) => {
           console.log(`Tile clicked: ${gameObject.getData('name')}, Coordinates: {x: ${gameObject.getData('x')}, y: ${gameObject.getData('y')}}`);
       });
   }
