@@ -1,4 +1,4 @@
-# phaser3Demo
+# phaserDemo
 Demo of Phaser3 js engine with desired functionality for SOV INVADERS
 
 currently is set to only update the game / map upon user interactions with the standard 'update' phaser function ommited and a custom function to gets triggered to update the game / map only upon user interactions.  
